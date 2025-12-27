@@ -1,0 +1,38 @@
+[
+  {
+    "type": "watching",
+    "name": "la température du CPU"
+  },
+  {
+    "type": "listening",
+    "name": "le vent du ventilo"
+  },
+  {
+    "type": "competing",
+    "name": "une partie d'échecs contre Skynet"
+  },
+  {
+    "type": "playing",
+    "name": "à la balle avec le chat"
+  },
+  {
+    "type": "watching",
+    "name": "My little pony: Friendship is Magic"
+  },
+  {
+    "type": "playing",
+    "name": "Minecraft (Mode Créatif)"
+  },
+  {
+    "type": "playing",
+    "name": "Grand Theft Auto V"
+  },
+  {
+    "type": "playing",
+    "name": "Visual Studio Code"
+  },
+  {
+    "type": "playing",
+    "name": "Strinova (Ranked)"
+  }
+]

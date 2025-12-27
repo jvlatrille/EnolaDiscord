@@ -12,6 +12,7 @@ from .hue import commander_lumiere_reel
 from .calendar import ajouter_agenda_reel, consulter_agenda_reel
 from .meteo import obtenir_meteo_reel
 from .system import controle_media_reel, creer_alarme_reel
+from .wiz import commander_prise_reel
 
 # ------------------------------------------------------------------------------
 # DÉFINITIONS DES OUTILS (JSON SCHEMA)
@@ -112,6 +113,25 @@ TOOLS_DEFINITION = [
                     "valeur": {"type": "string"},
                 },
                 "required": ["action", "cible"],
+            },
+        },
+    },    
+    # --- PRISE CONNECTÉE (WIZ) ---
+    {
+        "type": "function",
+        "function": {
+            "name": "commander_prise",
+            "description": "Contrôle la prise connectée 'PC' (WiZ). Permet d'allumer, éteindre ou vérifier si elle est allumée.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["allumer", "eteindre", "statut"],
+                        "description": "Action à effectuer ('statut' pour savoir si elle est on/off).",
+                    }
+                },
+                "required": ["action"],
             },
         },
     },

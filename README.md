@@ -1,5 +1,3 @@
-# Enola
-
 python -m venv venv
 
-# EnolaDiscord
+source venv/bin/activate

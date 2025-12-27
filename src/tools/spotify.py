@@ -2,9 +2,6 @@
 ================================================================================
 @fichier      : src/tools/spotify.py
 @description  : Contrôle de la lecture musicale via l'API Spotify.
-                Gère l'authentification OAuth2, la sélection intelligente du
-                périlecteur (enceinte), et les commandes de lecture (Play, Pause,
-                Suivant, Précédent) avec support des playlists et favoris.
 ================================================================================
 """
 
@@ -30,7 +27,7 @@ def get_spotify_client():
     Utilise le cache pour éviter de se re-loguer à chaque fois.
     """
     if not SPOTIPY_CLIENT_ID:
-        print("⚠️ Pas de config Spotify trouvée (Env Vars manquantes).")
+        # On évite le spam de logs si pas configuré
         return None
 
     try:
@@ -52,8 +49,7 @@ def get_spotify_client():
 
         return spotipy.Spotify(auth_manager=auth_manager)
 
-    except Exception as e:
-        print(f"❌ Erreur Init Spotify : {e}")
+    except Exception:
         return None
 
 
@@ -65,8 +61,6 @@ def get_spotify_client():
 def _trouver_device_id(sp, nom_appareil=None):
     """
     Cherche l'ID d'un appareil Spotify.
-    1. Si un nom est donné : cherche correspondance exacte ou approchante.
-    2. Si aucun nom ou pas trouvé : prend l'appareil actif ou le premier dispo.
     """
     try:
         devices = sp.devices()
@@ -93,8 +87,7 @@ def _trouver_device_id(sp, nom_appareil=None):
             print(f"✅ Appareil deviné : {matches[0]}")
             return device_dict[matches[0]]
 
-        print(f"⚠️ Appareil '{nom_appareil}' introuvable.")
-        return None  # On retourne None pour signaler l'échec de la recherche spécifique
+        return None
 
     # B. Fallback : Appareil actif ou premier de la liste
     currently_playing = next((d for d in active_devices if d["is_active"]), None)
@@ -105,19 +98,38 @@ def _trouver_device_id(sp, nom_appareil=None):
 
 
 # ------------------------------------------------------------------------------
-# FONCTION PRINCIPALE
+# FONCTIONS PRINCIPALES
 # ------------------------------------------------------------------------------
+
+def obtenir_lecture_en_cours():
+    """
+    Récupère le titre et l'artiste en cours de lecture pour le statut Discord.
+    Retourne une string formatée ou None.
+    """
+    sp = get_spotify_client()
+    if not sp:
+        return None
+    
+    try:
+        current = sp.current_playback()
+        if current and current.get('is_playing') and current.get('item'):
+            track = current['item']
+            # On gère le cas des pubs ou podcasts qui n'ont pas forcément d'artiste
+            if 'artists' in track and track['artists']:
+                artist = track['artists'][0]['name']
+                title = track['name']
+                return f"{title} ({artist})"
+            else:
+                return track['name']
+    except Exception:
+        pass
+    
+    return None
 
 
 def commander_spotify_reel(action, recherche=None, appareil=None, position=None):
     """
     Pilote Spotify selon les demandes de l'IA.
-
-    Args:
-        action (str): play, pause, next, previous
-        recherche (str): Titre, artiste, playlist ou mots-clés "Titres Likés"
-        appareil (str): Nom de l'enceinte cible
-        position (int): Numéro de piste de départ (ex: 3 pour la 3ème chanson)
     """
     sp = get_spotify_client()
     if not sp:
@@ -137,7 +149,6 @@ def commander_spotify_reel(action, recherche=None, appareil=None, position=None)
             return "Aucun appareil Spotify disponible."
 
         # 2. Gestion de la position (Offset)
-        # L'utilisateur dit "3ème", l'API veut l'index 2.
         offset_idx = 0
         if position:
             try:
@@ -177,13 +188,10 @@ def commander_spotify_reel(action, recherche=None, appareil=None, position=None)
 def _gerer_lecture(sp, device_id, recherche, offset_idx):
     """
     Logique interne pour l'action 'play'.
-    Gère : Titres Likés, Playlists, Recherche Globale, Reprise simple.
     """
-    # Fallback : Si on demande une position sans titre, on assume "Titres Likés"
     if offset_idx > 0 and not recherche:
         recherche = "Titres Likés"
 
-    # CAS 1 : Reprise simple (Play sans argument)
     if not recherche:
         sp.start_playback(device_id=device_id)
         return "Lecture."
@@ -191,21 +199,10 @@ def _gerer_lecture(sp, device_id, recherche, offset_idx):
     recherche_low = recherche.lower()
 
     # --- A. MODE : TITRES LIKÉS ---
-    mots_likes = [
-        "titres likés",
-        "titres likes",
-        "mes likes",
-        "coups de cœur",
-        "favoris",
-        "ma musique",
-        "mes titres likés",
-        "titres reliqués",
-    ]
+    mots_likes = ["titres likés", "titres likes", "mes likes", "coups de cœur", "favoris", "ma musique"]
 
     if any(m in recherche_low for m in mots_likes):
-        print("❤️ Mode: Titres Likés")
         try:
-            # On charge assez de titres pour atteindre l'offset demandé
             limit_fetch = 50
             if offset_idx > 40:
                 limit_fetch = offset_idx + 10
@@ -216,38 +213,32 @@ def _gerer_lecture(sp, device_id, recherche, offset_idx):
             if not uris:
                 return "Bibliothèque vide."
 
-            # Tentative de mode aléatoire (shuffle)
             try:
                 sp.shuffle(state=False, device_id=device_id)
             except:
                 pass
 
-            # Calcul de la liste à lire selon l'offset
             safe_offset = offset_idx if offset_idx < len(uris) else 0
             uris_to_play = uris[safe_offset:]
 
             sp.start_playback(device_id=device_id, uris=uris_to_play)
-            return f"Titres likés lancés à partir du titre n°{safe_offset + 1}."
+            return f"Titres likés lancés."
 
         except Exception as e:
             print(f"Erreur Likes: {e}")
             return "Erreur lors du lancement des likes."
 
     # --- B. MODE : PLAYLISTS ---
-    print("📂 Recherche Playlist...")
     try:
-        # Récupération des playlists utilisateur
         user_playlists = sp.current_user_playlists(limit=50)
         playlist_dict = {p["name"]: p["uri"] for p in user_playlists["items"]}
 
-        # Recherche approximative
         matches = difflib.get_close_matches(
             recherche, list(playlist_dict.keys()), n=1, cutoff=0.6
         )
 
         if matches:
             best_match = matches[0]
-
             try:
                 sp.shuffle(state=False, device_id=device_id)
             except:
@@ -260,10 +251,9 @@ def _gerer_lecture(sp, device_id, recherche, offset_idx):
             sp.start_playback(**kwargs)
             return f"Playlist '{best_match}' lancée."
     except Exception:
-        pass  # On continue vers la recherche globale si pas trouvé dans les playlists
+        pass
 
-    # --- C. MODE : RECHERCHE GLOBALE (Tracks, Artistes, Albums) ---
-    print("🌍 Recherche mondiale...")
+    # --- C. MODE : RECHERCHE GLOBALE ---
     results = sp.search(q=recherche, limit=1, type="track,artist,album")
 
     if results["tracks"]["items"]:

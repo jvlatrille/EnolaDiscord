@@ -2,7 +2,6 @@
 ================================================================================
 @fichier      : src/config.py
 @description  : Configuration globale.
-                DOIT ETRE COPIÉ DANS UN FICHIER VIDE.
 ================================================================================
 """
 import os
@@ -25,16 +24,15 @@ MA_VILLE = os.getenv("MA_VILLE", "Bayonne")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
-# Gestion ID Utilisateur (sécurité)
 user_id_str = os.getenv("AUTHORIZED_USER_ID", "583268098983985163")
 try:
     AUTHORIZED_USER_ID = int(user_id_str)
 except ValueError:
     AUTHORIZED_USER_ID = 0
-    print("⚠️ ERREUR: AUTHORIZED_USER_ID mal configuré dans .env")
 
 # APIs Externes
 HUE_BRIDGE_IP = os.getenv("HUE_BRIDGE_IP")
+WIZ_PLUG_IP = os.getenv("WIZ_PLUG_IP")  # <--- NOUVEAU
 SPOTIPY_CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID")
 SPOTIPY_CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
 SPOTIPY_REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI")
