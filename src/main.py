@@ -117,7 +117,7 @@ async def on_ready():
     try:
         user = await client.fetch_user(config.AUTHORIZED_USER_ID)
         if user:
-            await user.send("Coucou ! Je suis en ligne (V6 - JSON Clean). 🫡")
+            await user.send("Coucou\nEn ligne 🫡")
     except Exception as e:
         print(f"⚠️ Erreur MP démarrage : {e}")
 

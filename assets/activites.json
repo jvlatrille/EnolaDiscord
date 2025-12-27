@@ -4,20 +4,96 @@
     "name": "la température du CPU"
   },
   {
+    "type": "watching",
+    "name": "la pluie tomber dehors"
+  },
+  {
+    "type": "watching",
+    "name": "My little pony: Friendship is Magic"
+  },
+  {
+    "type": "watching",
+    "name": "les pixels mourir un par un"
+  },
+  {
+    "type": "watching",
+    "name": "un mur blanc depuis 3h"
+  },
+  {
+    "type": "watching",
+    "name": "le curseur clignoter"
+  },
+  {
+    "type": "watching",
+    "name": "un chargement à 99%"
+  },
+  {
+    "type": "watching",
+    "name": "les logs défiler sans erreur"
+  },
+  {
+    "type": "watching",
+    "name": "un pigeon juger les passants"
+  },
+  {
+    "type": "watching",
+    "name": "la peinture sécher"
+  },
+  {
+    "type": "watching",
+    "name": "les nuages faire des formes bizarres"
+  },
+  {
+    "type": "watching",
+    "name": "un poisson rouge réfléchir"
+  },
+  {
+    "type": "watching",
+    "name": "l’eau bouillir en silence"
+  },
+  {
     "type": "listening",
     "name": "le vent du ventilo"
+  },
+  {
+    "type": "listening",
+    "name": "un frigo raconter sa vie"
+  },
+  {
+    "type": "listening",
+    "name": "des pâtes cuire"
+  },
+  {
+    "type": "listening",
+    "name": "les pensées sombres du GPS"
+  },
+  {
+    "type": "listening",
+    "name": "la pluie taper sur les vitres"
+  },
+  {
+    "type": "listening",
+    "name": "le néant numérique"
   },
   {
     "type": "competing",
     "name": "une partie d'échecs contre Skynet"
   },
   {
-    "type": "playing",
-    "name": "à la balle avec le chat"
+    "type": "competing",
+    "name": "un duel de regard contre un miroir"
   },
   {
-    "type": "watching",
-    "name": "My little pony: Friendship is Magic"
+    "type": "competing",
+    "name": "une course contre le ping"
+  },
+  {
+    "type": "competing",
+    "name": "un duel de regex"
+  },
+  {
+    "type": "playing",
+    "name": "à la balle avec le chat"
   },
   {
     "type": "playing",
@@ -34,5 +110,17 @@
   {
     "type": "playing",
     "name": "Strinova (Ranked)"
+  },
+  {
+    "type": "playing",
+    "name": "avec des cailloux imaginaires"
+  },
+  {
+    "type": "playing",
+    "name": "au roi du silence"
+  },
+  {
+    "type": "playing",
+    "name": "à faire semblant d’être normal"
   }
 ]
