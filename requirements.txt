@@ -1,0 +1,10 @@
+python-dotenv
+openai
+requests
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+pytz
+phue
+spotipy
+discord.py
