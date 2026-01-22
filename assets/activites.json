@@ -1,126 +1,126 @@
 [
   {
     "type": "watching",
-    "name": "la température du CPU"
+    "name": "Regarde la température du CPU"
   },
   {
     "type": "watching",
-    "name": "la pluie tomber dehors"
+    "name": "Regarde la pluie tomber dehors"
   },
   {
     "type": "watching",
-    "name": "My little pony: Friendship is Magic"
+    "name": "Regarde My Little Pony : Friendship is Magic"
   },
   {
     "type": "watching",
-    "name": "les pixels mourir un par un"
+    "name": "Regarde les pixels mourir un par un"
   },
   {
     "type": "watching",
-    "name": "un mur blanc depuis 3h"
+    "name": "Regarde un mur blanc depuis 3h"
   },
   {
     "type": "watching",
-    "name": "le curseur clignoter"
+    "name": "Regarde le curseur clignoter"
   },
   {
     "type": "watching",
-    "name": "un chargement à 99%"
+    "name": "Regarde un chargement bloqué à 99 %"
   },
   {
     "type": "watching",
-    "name": "les logs défiler sans erreur"
+    "name": "Regarde les logs défiler sans erreur"
   },
   {
     "type": "watching",
-    "name": "un pigeon juger les passants"
+    "name": "Regarde un pigeon juger les passants"
   },
   {
     "type": "watching",
-    "name": "la peinture sécher"
+    "name": "Regarde la peinture sécher"
   },
   {
     "type": "watching",
-    "name": "les nuages faire des formes bizarres"
+    "name": "Regarde les nuages faire des formes bizarres"
   },
   {
     "type": "watching",
-    "name": "un poisson rouge réfléchir"
+    "name": "Regarde un poisson rouge réfléchir"
   },
   {
     "type": "watching",
-    "name": "l’eau bouillir en silence"
+    "name": "Regarde l'eau bouillir en silence"
   },
   {
     "type": "listening",
-    "name": "le vent du ventilo"
+    "name": "Écoute le bruit du ventilo"
   },
   {
     "type": "listening",
-    "name": "un frigo raconter sa vie"
+    "name": "Écoute un frigo raconter sa vie"
   },
   {
     "type": "listening",
-    "name": "des pâtes cuire"
+    "name": "Écoute des pâtes cuire"
   },
   {
     "type": "listening",
-    "name": "les pensées sombres du GPS"
+    "name": "Écoute les pensées sombres du GPS"
   },
   {
     "type": "listening",
-    "name": "la pluie taper sur les vitres"
+    "name": "Écoute la pluie taper sur les vitres"
   },
   {
     "type": "listening",
-    "name": "le néant numérique"
+    "name": "Écoute le néant numérique"
   },
   {
     "type": "competing",
-    "name": "une partie d'échecs contre Skynet"
+    "name": "Fais une partie d'échecs contre Skynet"
   },
   {
     "type": "competing",
-    "name": "un duel de regard contre un miroir"
+    "name": "Fais un duel de regard avec un miroir"
   },
   {
     "type": "competing",
-    "name": "une course contre le ping"
+    "name": "Fais une course contre le ping"
   },
   {
     "type": "competing",
-    "name": "un duel de regex"
+    "name": "Fais un duel de regex"
   },
   {
     "type": "playing",
-    "name": "à la balle avec le chat"
+    "name": "Joue à la balle avec le chat"
   },
   {
     "type": "playing",
-    "name": "Minecraft (Mode Créatif)"
+    "name": "Joue à Minecraft en mode créatif"
   },
   {
     "type": "playing",
-    "name": "Grand Theft Auto V"
+    "name": "Joue à Grand Theft Auto V"
   },
   {
     "type": "playing",
-    "name": "Visual Studio Code"
+    "name": "Joue à Visual Studio Code"
   },
   {
     "type": "playing",
-    "name": "Strinova (Ranked)"
+    "name": "Joue à Strinova en classé"
   },
   {
     "type": "playing",
-    "name": "avec des cailloux imaginaires"
+    "name": "Joue avec des cailloux imaginaires"
   },
   {
     "type": "playing",
-    "name": "au roi du silence"
+    "name": "Joue au roi du silence"
   },
   {
     "type": "playing",
-    "name": "à faire semblant d’être normal"
+    "name": "Joue à faire semblant d'être normal"
   }
 ]

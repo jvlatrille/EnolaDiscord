@@ -15,6 +15,7 @@ from discord.ext import tasks
 import config
 from brain import traiter_commande_gpt, transcrire_audio
 from tools.spotify import obtenir_lecture_en_cours
+from tools.scraper import check_new_codes
 
 # Configuration Discord
 intents = discord.Intents.default()
@@ -120,6 +121,10 @@ async def on_ready():
             await user.send("Coucou\nEn ligne 🫡")
     except Exception as e:
         print(f"⚠️ Erreur MP démarrage : {e}")
+    
+    if not task_codes.is_running():
+        task_codes.start()
+        print("✅ Scraper Arknights activé.")
 
 @client.event
 async def on_message(message):
@@ -178,8 +183,36 @@ async def on_message(message):
         else:
             await message.channel.send(reponse)
 
+@tasks.loop(hours=4)
+async def task_codes():
+    # Le scraper retourne maintenant une liste de dicts : [{'game': '...', 'code': '...'}]
+    nouveautés = await client.loop.run_in_executor(None, check_new_codes)
+    
+    if nouveautés:
+        user = await client.fetch_user(config.AUTHORIZED_USER_ID)
+        if user:
+            for item in nouveautés:
+                jeu = item['game']
+                code = item['code']
+                
+                # Couleur différente selon le jeu
+                couleur = 0xE67E22 # Orange par défaut (Arknights)
+                if "Strinova" in jeu:
+                    couleur = 0x3498DB # Bleu pour Strinova
+
+                embed = discord.Embed(
+                    title=f"🎁 Nouveau code {jeu} !",
+                    description=f"Code : **{code}**\n\n_Pense à l'activer en jeu !_ 🎮",
+                    color=couleur
+                )
+                await user.send(embed=embed)
+                print(f"✉️ Code envoyé pour {jeu} : {code}")
+                
 if __name__ == "__main__":
     if not config.DISCORD_TOKEN:
         print("❌ ERREUR : DISCORD_TOKEN manquant.")
     else:
         client.run(config.DISCORD_TOKEN)
+    print("🔍 Test du scraper en cours...")
+    codes = check_new_codes()
+    print(f"✅ Nouveaux codes trouvés : {codes}")

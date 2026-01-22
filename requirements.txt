@@ -8,3 +8,4 @@ pytz
 phue
 spotipy
 discord.py
+beautifulsoup4
