@@ -16,12 +16,15 @@ import config
 from brain import traiter_commande_gpt, transcrire_audio
 from tools.spotify import obtenir_lecture_en_cours
 from tools.scraper import check_new_codes
+from tools.anilist import check_new_episodes
 
 # Configuration Discord
 intents = discord.Intents.default()
 intents.message_content = True
 intents.messages = True
 client = discord.Client(intents=intents)
+dernier_channel_autorise = None
+
 
 historiques = {}
 
@@ -126,8 +129,14 @@ async def on_ready():
         task_codes.start()
         print("✅ Scraper Arknights activé.")
 
+    if not task_animes.is_running():
+        task_animes.start()
+        print("✅ Scraper Animes activé.")
+
 @client.event
 async def on_message(message):
+    global dernier_channel_autorise
+    
     if message.author == client.user:
         return
 
@@ -135,6 +144,7 @@ async def on_message(message):
         return
 
     user_content = message.content
+    dernier_channel_autorise = message.channel.id
 
     # Gestion des vocaux
     if message.attachments:
@@ -145,7 +155,7 @@ async def on_message(message):
                 await attachment.save(temp_filename)
                 
                 async with message.channel.typing():
-                    transcription = transcrire_audio(temp_filename)
+                    transcription = await asyncio.to_thread(transcrire_audio, temp_filename)
                 
                 if os.path.exists(temp_filename):
                     os.remove(temp_filename)
@@ -172,7 +182,7 @@ async def on_message(message):
     hist = historiques.get(message.channel.id, [])
     
     async with message.channel.typing():
-        reponse, new_hist = traiter_commande_gpt(user_content, hist)
+        reponse, new_hist = await asyncio.to_thread(traiter_commande_gpt, user_content, hist)
     
     historiques[message.channel.id] = new_hist
 
@@ -207,12 +217,53 @@ async def task_codes():
                 )
                 await user.send(embed=embed)
                 print(f"✉️ Code envoyé pour {jeu} : {code}")
-                
+       
+@tasks.loop(minutes=5)
+async def task_animes():
+    global dernier_channel_autorise
+
+    nouveaux = await client.loop.run_in_executor(None, check_new_episodes)
+    if not nouveaux:
+        return
+
+    # cible: salon connu, sinon DM
+    canal = None
+    if dernier_channel_autorise:
+        canal = client.get_channel(dernier_channel_autorise)
+
+    if canal is None:
+        try:
+            canal = await client.fetch_user(config.AUTHORIZED_USER_ID)
+        except Exception:
+            canal = None
+
+    if canal is None:
+        return
+
+    for item in nouveaux:
+        titre = item["titre"]
+        ep = item["episode"]
+        crunchy = item["crunchy_url"]
+        anilist = item.get("anilist_url")
+        image = item.get("image_url")
+
+        embed = discord.Embed(
+            title=f"Nouvel épisode: {titre}",
+            description=f"Épisode {ep} détecté.",
+            url=anilist or crunchy,
+            color=0x7F8C8D
+        )
+        if image:
+            embed.set_thumbnail(url=image)
+
+        embed.add_field(name="Crunchyroll", value=crunchy, inline=False)
+        if anilist:
+            embed.add_field(name="AniList", value=anilist, inline=False)
+
+        await canal.send(embed=embed)
+        
 if __name__ == "__main__":
     if not config.DISCORD_TOKEN:
         print("❌ ERREUR : DISCORD_TOKEN manquant.")
     else:
         client.run(config.DISCORD_TOKEN)
-    print("🔍 Test du scraper en cours...")
-    codes = check_new_codes()
-    print(f"✅ Nouveaux codes trouvés : {codes}")

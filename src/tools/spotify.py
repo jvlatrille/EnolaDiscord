@@ -178,11 +178,14 @@ def commander_spotify_reel(action, recherche=None, appareil=None, position=None)
 
     except spotipy.SpotifyException as e:
         print(f"⚠️ Erreur Spotify API: {e}")
-        if "No active device" in str(e):
+
+        msg = str(e)
+        if "Restriction violated" in msg:
+            return "Spotify refuse la commande (restriction du lecteur / compte)."
+        if "No active device" in msg:
             return "Aucun lecteur actif."
         return "Erreur technique Spotify."
-    except Exception as e:
-        return f"Problème Spotify : {e}"
+
 
 
 def _gerer_lecture(sp, device_id, recherche, offset_idx):

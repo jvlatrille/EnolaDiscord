@@ -9,3 +9,7 @@ phue
 spotipy
 discord.py
 beautifulsoup4
+langchain
+langchain-openai
+langchain-core
+langchain-community
