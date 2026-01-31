@@ -14,3 +14,9 @@ langchain-openai
 langchain-core
 langchain-community
 apscheduler
+
+fastapi 
+uvicorn 
+pydantic
+multipart
+edge-tts

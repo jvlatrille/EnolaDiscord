@@ -20,6 +20,10 @@ from tools.scraper import check_new_codes
 from tools.anilist import check_new_episodes
 from tools.system import check_alarmes_actives, get_recap_alarmes
 
+import subprocess
+import sys
+import time
+
 # Configuration Discord
 intents = discord.Intents.default()
 intents.message_content = True
@@ -360,5 +364,31 @@ async def on_message(message):
 if __name__ == "__main__":
     if not config.DISCORD_TOKEN:
         print("❌ ERREUR : DISCORD_TOKEN manquant.")
-    else:
+        sys.exit(1)
+
+    # Lancement de l'API en parallèle
+    api_path = os.path.join(BASE_DIR, "api.py")
+    process_api = None
+
+    try:
+        print(f"🚀 Lancement de l'API depuis : {api_path}")
+        # On utilise sys.executable pour garder le même environnement Python (venv ou autre)
+        process_api = subprocess.Popen([sys.executable, api_path])
+        
+        # Lancement du bot (bloquant)
         client.run(config.DISCORD_TOKEN)
+
+    except KeyboardInterrupt:
+        # Géré proprement par discord.py, mais au cas où
+        pass
+
+    finally:
+        # Nettoyage à la fermeture du bot
+        if process_api:
+            print("🛑 Arrêt de l'API...")
+            process_api.terminate()
+            try:
+                process_api.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process_api.kill()
+            print("✅ API arrêtée.")
