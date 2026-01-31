@@ -10,13 +10,15 @@ import os
 import json
 import random
 import asyncio
+from datetime import datetime, timedelta
 from discord.ext import tasks
 
 import config
 from brain import traiter_commande_gpt, transcrire_audio
-from tools.spotify import obtenir_lecture_en_cours
+from tools.spotify import obtenir_lecture_en_cours, commander_spotify_reel
 from tools.scraper import check_new_codes
 from tools.anilist import check_new_episodes
+from tools.system import check_alarmes_actives, get_recap_alarmes
 
 # Configuration Discord
 intents = discord.Intents.default()
@@ -24,7 +26,7 @@ intents.message_content = True
 intents.messages = True
 client = discord.Client(intents=intents)
 dernier_channel_autorise = None
-
+prochain_recap = None
 
 historiques = {}
 
@@ -108,90 +110,6 @@ async def update_status_loop():
     except Exception as e:
         print(f"⚠️ Erreur update status : {e}")
 
-@client.event
-async def on_ready():
-    print(f"🟢 Enola est connectée : {client.user}")
-    print(f"📂 Activités JSON : {ACTIVITES_FILE}")
-    
-    # Démarrage de la boucle d'activité
-    if not update_status_loop.is_running():
-        update_status_loop.start()
-    
-    # Message de bienvenue
-    try:
-        user = await client.fetch_user(config.AUTHORIZED_USER_ID)
-        if user:
-            await user.send("Coucou\nEn ligne 🫡")
-    except Exception as e:
-        print(f"⚠️ Erreur MP démarrage : {e}")
-    
-    if not task_codes.is_running():
-        task_codes.start()
-        print("✅ Scraper Arknights activé.")
-
-    if not task_animes.is_running():
-        task_animes.start()
-        print("✅ Scraper Animes activé.")
-
-@client.event
-async def on_message(message):
-    global dernier_channel_autorise
-    
-    if message.author == client.user:
-        return
-
-    if message.author.id != config.AUTHORIZED_USER_ID:
-        return
-
-    user_content = message.content
-    dernier_channel_autorise = message.channel.id
-
-    # Gestion des vocaux
-    if message.attachments:
-        for attachment in message.attachments:
-            if attachment.content_type and "audio" in attachment.content_type:
-                print(f"🎤 Vocal reçu : {attachment.filename}")
-                temp_filename = f"temp_{attachment.filename}"
-                await attachment.save(temp_filename)
-                
-                async with message.channel.typing():
-                    transcription = await asyncio.to_thread(transcrire_audio, temp_filename)
-                
-                if os.path.exists(temp_filename):
-                    os.remove(temp_filename)
-
-                if transcription:
-                    user_content = transcription
-                    print(f"📝 Transcription : {user_content}")
-                    await message.channel.send(f"*(J'ai entendu : \"{user_content}\")*")
-                else:
-                    await message.channel.send("⚠️ Je n'ai rien entendu.")
-                    return
-                break
-
-    if not user_content:
-        return
-
-    print(f"📩 Traitement : {user_content}")
-
-    if user_content.lower() in ["reset", "clear", "oubli"]:
-        historiques[message.channel.id] = []
-        await message.channel.send("🧹 Mémoire effacée.")
-        return
-
-    hist = historiques.get(message.channel.id, [])
-    
-    async with message.channel.typing():
-        reponse, new_hist = await asyncio.to_thread(traiter_commande_gpt, user_content, hist)
-    
-    historiques[message.channel.id] = new_hist
-
-    if reponse:
-        if len(reponse) > 2000:
-            for i in range(0, len(reponse), 2000):
-                await message.channel.send(reponse[i:i+2000])
-        else:
-            await message.channel.send(reponse)
 
 @tasks.loop(hours=4)
 async def task_codes():
@@ -261,7 +179,184 @@ async def task_animes():
             embed.add_field(name="AniList", value=anilist, inline=False)
 
         await canal.send(embed=embed)
+
+def planifier_prochain_recap():
+    """Calcule une heure aléatoire entre 08h00 et 21h00 pour le prochain message"""
+    global prochain_recap
+    now = datetime.now()
+    
+    # On choisit une heure aléatoire aujourd'hui
+    heure_random = random.randint(8, 20)
+    minute_random = random.randint(0, 59)
+    
+    cible = now.replace(hour=heure_random, minute=minute_random, second=0)
+    
+    # Si cette heure est déjà passée aujourd'hui, on la met à demain
+    if cible < now:
+        cible = cible + timedelta(days=1)
+        # On relance le dé pour demain pour que ce soit pas la même heure
+        cible = cible.replace(hour=random.randint(8, 20), minute=random.randint(0, 59))
+    
+    prochain_recap = cible
+    print(f"📅 Prochain récap planifié pour : {prochain_recap.strftime('%d/%m %H:%M')}")
+
+@tasks.loop(minutes=1) # On vérifie chaque minute
+async def task_recap_alarmes():
+    global prochain_recap
+    
+    # Sécurité initialisation
+    if prochain_recap is None:
+        planifier_prochain_recap()
+        return
+
+    now = datetime.now()
+    
+    # Si on a dépassé l'heure prévue (à la minute près)
+    if now >= prochain_recap:
+        # 1. On récupère le texte
+        texte_recap = await client.loop.run_in_executor(None, get_recap_alarmes)
         
+        # 2. On envoie si y'a des alarmes
+        if texte_recap:
+            user = await client.fetch_user(config.AUTHORIZED_USER_ID)
+            if user:
+                embed = discord.Embed(title="⏰ Récapitulatif de tes alarmes", description=texte_recap, color=0xF1C40F)
+                await user.send(embed=embed)
+                print("✉️ Récap envoyé !")
+        
+        # 3. On replanifie pour demain
+        # On force l'ajout d'un jour pour être sûr de pas boucler
+        demain = now + timedelta(days=1)
+        prochain_recap = demain.replace(hour=random.randint(8, 20), minute=random.randint(0, 59))
+        print(f"📅 Prochain récap (replanifié) : {prochain_recap.strftime('%d/%m %H:%M')}")
+
+
+@tasks.loop(seconds=60)
+async def task_alarmes():
+    """Vérifie chaque minute si une alarme doit sonner"""
+    # On exécute la vérification dans un thread pour ne pas bloquer le bot
+    playlist = await client.loop.run_in_executor(None, check_alarmes_actives)
+    
+    if playlist:
+        print(f"⏰ DRIIING ! Lancement de l'alarme : {playlist}")
+        
+        # On force la lecture sur l'appareil 'Enola_Pi' (ton speaker)
+        await client.loop.run_in_executor(None, lambda: commander_spotify_reel(
+            action="play", 
+            recherche=playlist, 
+            appareil="Enola_Pi"
+        ))
+
+@task_alarmes.before_loop
+async def before_task_alarmes():
+    """
+    Cette fonction s'exécute UNE FOIS avant le démarrage de la boucle.
+    Elle permet de se caler sur la minute pile (XX:XX:00).
+    """
+    await client.wait_until_ready()
+    
+    now = datetime.now()
+    # On calcule combien de secondes il reste avant la prochaine minute
+    secondes_a_attendre = 60 - now.second
+    
+    print(f"⏳ Synchronisation de l'horloge... Attente de {secondes_a_attendre}s.")
+    await asyncio.sleep(secondes_a_attendre)
+
+@client.event
+async def on_ready():
+    print(f"🟢 Enola est connectée : {client.user}")
+    print(f"📂 Activités JSON : {ACTIVITES_FILE}")
+    
+    # Démarrage de la boucle d'activité
+    if not update_status_loop.is_running():
+        update_status_loop.start()
+    
+    # Message de bienvenue
+    try:
+        user = await client.fetch_user(config.AUTHORIZED_USER_ID)
+        if user:
+            await user.send("Coucou\nEn ligne 🫡")
+    except Exception as e:
+        print(f"⚠️ Erreur MP démarrage : {e}")
+    
+    if not task_codes.is_running():
+        task_codes.start()
+        print("✅ Scraper Arknights activé.")
+
+    if not task_animes.is_running():
+        task_animes.start()
+        print("✅ Scraper Animes activé.")
+
+    if not task_alarmes.is_running():
+        task_alarmes.start()
+        print("✅ Système d'alarmes activé.")
+
+    if not task_recap_alarmes.is_running():
+        planifier_prochain_recap()
+        task_recap_alarmes.start()
+
+@client.event
+async def on_message(message):
+    global dernier_channel_autorise
+    
+    if message.author == client.user:
+        return
+
+    if message.author.id != config.AUTHORIZED_USER_ID:
+        return
+
+    user_content = message.content
+    dernier_channel_autorise = message.channel.id
+
+    # Gestion des vocaux
+    if message.attachments:
+        for attachment in message.attachments:
+            if attachment.content_type and "audio" in attachment.content_type:
+                print(f"🎤 Vocal reçu : {attachment.filename}")
+                temp_filename = f"temp_{attachment.filename}"
+                await attachment.save(temp_filename)
+                
+                async with message.channel.typing():
+                    transcription = await asyncio.to_thread(transcrire_audio, temp_filename)
+                
+                if os.path.exists(temp_filename):
+                    os.remove(temp_filename)
+
+                if transcription:
+                    user_content = transcription
+                    print(f"📝 Transcription : {user_content}")
+                    await message.channel.send(f"*(J'ai entendu : \"{user_content}\")*")
+                else:
+                    await message.channel.send("⚠️ Je n'ai rien entendu.")
+                    return
+                break
+
+    if not user_content:
+        return
+
+    print(f"📩 Traitement : {user_content}")
+
+    if user_content.lower() in ["reset", "clear", "oubli"]:
+        historiques[message.channel.id] = []
+        await message.channel.send("🧹 Mémoire effacée.")
+        return
+
+    hist = historiques.get(message.channel.id, [])
+    
+    async with message.channel.typing():
+        reponse, new_hist = await asyncio.to_thread(traiter_commande_gpt, user_content, hist)
+    
+    historiques[message.channel.id] = new_hist
+
+    if reponse:
+        if len(reponse) > 2000:
+            for i in range(0, len(reponse), 2000):
+                await message.channel.send(reponse[i:i+2000])
+        else:
+            await message.channel.send(reponse)
+
+
+
 if __name__ == "__main__":
     if not config.DISCORD_TOKEN:
         print("❌ ERREUR : DISCORD_TOKEN manquant.")

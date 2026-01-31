@@ -15,7 +15,7 @@ from .spotify import commander_spotify_reel
 from .hue import commander_lumiere_reel
 from .calendar import ajouter_agenda_reel, consulter_agenda_reel
 from .meteo import obtenir_meteo_reel
-from .system import controle_media_reel, creer_alarme_reel
+from .system import controle_media_reel, creer_alarme_reel, get_recap_alarmes
 from .wiz import commander_prise_reel
 from .anilist import tool_recherche_anime, tool_ajouter_anime_confirme, tool_gerer_watchlist
 
@@ -58,6 +58,11 @@ class AnimeAjoutInput(BaseModel):
 class AnimeGestionInput(BaseModel):
     action: Literal["lister", "supprimer"] = Field(description="Action watchlist")
     query: Optional[str] = Field(default="", description="Nom de l'anime si suppression")
+
+class AlarmeInput(BaseModel):
+    heure_str: str = Field(description="Heure au format HH:MM")
+    playlist: Optional[str] = Field(default="Titres Likés", description="Nom playlist")
+    jours_str: Optional[str] = Field(default=None, description="Jours de récurrence (ex: 'lundi,mardi', 'semaine', 'weekend'). Laisser vide pour une seule fois.")
 
 # --- LISTE DES TOOLS ---
 
@@ -105,7 +110,6 @@ def charger_tools_langchain():
             description="Gère le volume du système (Raspberry Pi).",
             args_schema=MediaInput
         ),
-        # --- ANIMES ---
         StructuredTool.from_function(
             func=tool_recherche_anime,
             name="recherche_anime",
@@ -123,5 +127,11 @@ def charger_tools_langchain():
             name="gerer_watchlist",
             description="Liste ou supprime des animes de la watchlist.",
             args_schema=AnimeGestionInput
+        ),
+        StructuredTool.from_function(
+            func=creer_alarme_reel,
+            name="creer_alarme",
+            description="Programme une alarme Spotify. Préciser les jours si récurrent.",
+            args_schema=AlarmeInput
         ),
     ]
